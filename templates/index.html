@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma Demo - Interactive Model Interface</title>
+    <!-- Bootstrap CSS (Replit-themed dark version) -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Prism.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/gemma-logo.svg') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="{{ url_for('static', filename='img/gemma-logo.svg') }}" alt="Gemma Logo" width="40" height="40" class="me-2">
+                <span>Gemma Demo</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#text-generation">Text Generation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#question-answering">Q&A</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#code-generation">Code Generation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#creative-writing">Creative Writing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://huggingface.co/google/gemma" target="_blank">Hugging Face <i class="bi bi-box-arrow-up-right"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-md-12 text-center">
+                <h1 class="display-4 mb-3">Gemma Interactive Demo</h1>
+                <p class="lead">Explore the capabilities of Google's state-of-the-art lightweight open model</p>
+                
+                <div class="model-selection-container mt-4">
+                    <div class="btn-group" role="group" aria-label="Model selection">
+                        <button type="button" class="btn btn-outline-primary" data-model="gemma-2b">Gemma 2B</button>
+                        <button type="button" class="btn btn-outline-primary active" data-model="gemma-7b">Gemma 7B</button>
+                    </div>
+                    <p class="model-status mt-2">Current model: <span id="current-model">gemma-7b</span> <span id="loading-indicator" class="d-none"><span class="spinner-border spinner-border-sm" role="status"></span> Loading...</span></p>
+                    
+                    <div class="alert alert-warning mt-3" id="token-warning">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Hugging Face Token Required</h5>
+                        <p>To use the actual Gemma model, you need to provide a Hugging Face API token with access to the Gemma model.</p>
+                        <p>Set the environment variable <code>HUGGING_FACE_TOKEN</code> to your Hugging Face token to enable actual model responses.</p>
+                        <p><strong>Note:</strong> Without a token, the demo will use simulated responses.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="text-generation-tab" data-bs-toggle="tab" data-bs-target="#text-generation" type="button" role="tab" aria-controls="text-generation" aria-selected="true">Text Generation</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="question-answering-tab" data-bs-toggle="tab" data-bs-target="#question-answering" type="button" role="tab" aria-controls="question-answering" aria-selected="false">Q&A</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="code-generation-tab" data-bs-toggle="tab" data-bs-target="#code-generation" type="button" role="tab" aria-controls="code-generation" aria-selected="false">Code Generation</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="creative-writing-tab" data-bs-toggle="tab" data-bs-target="#creative-writing" type="button" role="tab" aria-controls="creative-writing" aria-selected="false">Creative Writing</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="myTabContent">
+            <!-- Text Generation Tab -->
+            <div class="tab-pane fade show active" id="text-generation" role="tabpanel" aria-labelledby="text-generation-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3>Text Generation</h3>
+                        <p>Generate text based on your prompt. Adjust the parameters to control the output.</p>
+                        
+                        <form id="text-generation-form">
+                            <div class="mb-3">
+                                <label for="text-prompt" class="form-label">Prompt</label>
+                                <textarea class="form-control" id="text-prompt" rows="4" placeholder="Enter your prompt here..."></textarea>
+                            </div>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="text-max-length" class="form-label">Max Length</label>
+                                    <input type="range" class="form-range" id="text-max-length" min="32" max="512" value="256" step="16">
+                                    <div class="d-flex justify-content-between">
+                                        <small>32</small>
+                                        <small>256</small>
+                                        <small>512</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="text-temperature" class="form-label">Temperature</label>
+                                    <input type="range" class="form-range" id="text-temperature" min="0.1" max="1.5" value="0.7" step="0.1">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.1</small>
+                                        <small>0.7</small>
+                                        <small>1.5</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="advanced-options mb-3">
+                                <div class="d-grid mb-2">
+                                    <button class="btn btn-sm btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedTextOptions" aria-expanded="false" aria-controls="advancedTextOptions">
+                                        Advanced Options
+                                    </button>
+                                </div>
+                                <div class="collapse" id="advancedTextOptions">
+                                    <div class="card card-body bg-dark">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label for="text-top-p" class="form-label">Top P</label>
+                                                <input type="range" class="form-range" id="text-top-p" min="0.1" max="1.0" value="0.9" step="0.1">
+                                                <div class="d-flex justify-content-between">
+                                                    <small>0.1</small>
+                                                    <small>0.9</small>
+                                                    <small>1.0</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="text-top-k" class="form-label">Top K</label>
+                                                <input type="range" class="form-range" id="text-top-k" min="1" max="100" value="50" step="1">
+                                                <div class="d-flex justify-content-between">
+                                                    <small>1</small>
+                                                    <small>50</small>
+                                                    <small>100</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="text-repetition-penalty" class="form-label">Repetition Penalty</label>
+                                                <input type="range" class="form-range" id="text-repetition-penalty" min="1.0" max="2.0" value="1.1" step="0.1">
+                                                <div class="d-flex justify-content-between">
+                                                    <small>1.0</small>
+                                                    <small>1.1</small>
+                                                    <small>2.0</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="generate-text-btn">Generate Text</button>
+                                <div class="alert alert-danger d-none" id="text-generation-error"></div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="examples-container">
+                            <h4>Examples</h4>
+                            <div class="list-group">
+                                {% for example in text_examples %}
+                                <button type="button" class="list-group-item list-group-item-action example-item" data-prompt="{{ example.prompt }}">
+                                    <strong>{{ example.title }}</strong>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="output-container p-3 d-none" id="text-generation-output">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">Generated Text</h4>
+                                <button class="btn btn-sm btn-outline-secondary copy-btn" data-target="generated-text">Copy</button>
+                            </div>
+                            <div class="output-content p-3" id="generated-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Answering Tab -->
+            <div class="tab-pane fade" id="question-answering" role="tabpanel" aria-labelledby="question-answering-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3>Question Answering</h3>
+                        <p>Ask questions and get informative answers from the Gemma model.</p>
+                        
+                        <form id="qa-form">
+                            <div class="mb-3">
+                                <label for="question-input" class="form-label">Question</label>
+                                <textarea class="form-control" id="question-input" rows="3" placeholder="Ask a question..."></textarea>
+                            </div>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="qa-max-length" class="form-label">Max Answer Length</label>
+                                    <input type="range" class="form-range" id="qa-max-length" min="32" max="256" value="150" step="8">
+                                    <div class="d-flex justify-content-between">
+                                        <small>32</small>
+                                        <small>150</small>
+                                        <small>256</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="qa-temperature" class="form-label">Temperature</label>
+                                    <input type="range" class="form-range" id="qa-temperature" min="0.1" max="1.0" value="0.4" step="0.1">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.1</small>
+                                        <small>0.4</small>
+                                        <small>1.0</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="answer-question-btn">Answer Question</button>
+                                <div class="alert alert-danger d-none" id="qa-error"></div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="examples-container">
+                            <h4>Example Questions</h4>
+                            <div class="list-group">
+                                {% for example in qa_examples %}
+                                <button type="button" class="list-group-item list-group-item-action example-question" data-question="{{ example.question }}">
+                                    <strong>{{ example.title }}</strong>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="output-container p-3 d-none" id="qa-output">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">Answer</h4>
+                                <button class="btn btn-sm btn-outline-secondary copy-btn" data-target="qa-answer">Copy</button>
+                            </div>
+                            <div class="output-content p-3" id="qa-answer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Generation Tab -->
+            <div class="tab-pane fade" id="code-generation" role="tabpanel" aria-labelledby="code-generation-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3>Code Generation</h3>
+                        <p>Generate code based on your requirements.</p>
+                        
+                        <form id="code-form">
+                            <div class="mb-3">
+                                <label for="code-prompt" class="form-label">Prompt</label>
+                                <textarea class="form-control" id="code-prompt" rows="3" placeholder="Describe the code you want..."></textarea>
+                            </div>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="code-max-length" class="form-label">Max Length</label>
+                                    <input type="range" class="form-range" id="code-max-length" min="32" max="512" value="256" step="16">
+                                    <div class="d-flex justify-content-between">
+                                        <small>32</small>
+                                        <small>256</small>
+                                        <small>512</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="code-temperature" class="form-label">Temperature</label>
+                                    <input type="range" class="form-range" id="code-temperature" min="0.1" max="1.0" value="0.2" step="0.1">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.1</small>
+                                        <small>0.2</small>
+                                        <small>1.0</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="generate-code-btn">Generate Code</button>
+                                <div class="alert alert-danger d-none" id="code-error"></div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="examples-container">
+                            <h4>Example Prompts</h4>
+                            <div class="list-group">
+                                {% for example in code_examples %}
+                                <button type="button" class="list-group-item list-group-item-action example-code" data-prompt="{{ example.prompt }}">
+                                    <strong>{{ example.title }}</strong>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="output-container p-3 d-none" id="code-output">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">Generated Code</h4>
+                                <button class="btn btn-sm btn-outline-secondary copy-btn" data-target="generated-code">Copy</button>
+                            </div>
+                            <div class="output-content p-3 code-block" id="generated-code"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative Writing Tab -->
+            <div class="tab-pane fade" id="creative-writing" role="tabpanel" aria-labelledby="creative-writing-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3>Creative Writing</h3>
+                        <p>Generate creative stories, poems, or other written content.</p>
+                        
+                        <form id="creative-form">
+                            <div class="mb-3">
+                                <label for="creative-prompt" class="form-label">Prompt</label>
+                                <textarea class="form-control" id="creative-prompt" rows="3" placeholder="Describe what you want Gemma to write..."></textarea>
+                            </div>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="creative-max-length" class="form-label">Max Length</label>
+                                    <input type="range" class="form-range" id="creative-max-length" min="64" max="1024" value="400" step="32">
+                                    <div class="d-flex justify-content-between">
+                                        <small>64</small>
+                                        <small>400</small>
+                                        <small>1024</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="creative-temperature" class="form-label">Temperature</label>
+                                    <input type="range" class="form-range" id="creative-temperature" min="0.5" max="1.5" value="1.0" step="0.1">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.5</small>
+                                        <small>1.0</small>
+                                        <small>1.5</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="generate-creative-btn">Generate</button>
+                                <div class="alert alert-danger d-none" id="creative-error"></div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="examples-container">
+                            <h4>Example Prompts</h4>
+                            <div class="list-group">
+                                {% for example in creative_examples %}
+                                <button type="button" class="list-group-item list-group-item-action example-creative" data-prompt="{{ example.prompt }}">
+                                    <strong>{{ example.title }}</strong>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="output-container p-3 d-none" id="creative-output">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">Generated Content</h4>
+                                <button class="btn btn-sm btn-outline-secondary copy-btn" data-target="creative-text">Copy</button>
+                            </div>
+                            <div class="output-content p-3" id="creative-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>About Gemma</h5>
+                    <p>Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models.</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="https://huggingface.co/google/gemma" target="_blank" class="text-decoration-none">Gemma on Hugging Face</a></li>
+                        <li><a href="https://ai.google.dev/gemma" target="_blank" class="text-decoration-none">Google AI Gemma Overview</a></li>
+                        <li><a href="https://github.com/google/gemma.cpp" target="_blank" class="text-decoration-none">Gemma on GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="mb-0 text-center">This is a demo application showcasing the capabilities of the Gemma model using Hugging Face integration.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
